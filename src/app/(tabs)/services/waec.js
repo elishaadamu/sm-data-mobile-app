@@ -1,11 +1,13 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, ScrollView, StyleSheet, Alert, Image } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Image } from 'react-native';
 import axios from 'axios';
+import Toast from 'react-native-toast-message';
 import { Ionicons } from '@expo/vector-icons';
 import { apiUrl, API_CONFIG } from '../../../config/api';
 import { useAppContext } from '../../../context/AppContext';
 import Input from '../../../components/Input';
 import Button from '../../../components/Button';
+import { confirmAction, showAlert } from '../../../utils/alert';
 
 export default function WaecScreen() {
   const { userData, walletBalance, fetchWalletBalance } = useAppContext();
@@ -20,41 +22,35 @@ export default function WaecScreen() {
   const handlePurchase = () => {
     const userId = userData?.id || userData?._id;
     if (!userId || !phoneNumber) {
-      Alert.alert('Error', 'Please fill in all required fields');
+      Toast.show({ type: 'error', text1: 'Please fill in all required fields' });
       return;
     }
 
-    Alert.alert(
+    confirmAction(
       'Confirm Purchase',
       `Buy ${quantity} WAEC Scratch Card(s) for ₦${totalAmount.toLocaleString()}?\n\nPINs will be sent to: ${phoneNumber}`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Proceed',
-          onPress: async () => {
-            setLoading(true);
-            try {
-              const response = await axios.post(apiUrl(API_CONFIG.ENDPOINTS.WAEC.BUY_PIN), {
-                examType: 'result_checker',
-                quantity,
-                phoneNumber,
-                email,
-                amount: totalAmount,
-                userId,
-              });
-              Alert.alert('Success ✅', response.data?.message || 'WAEC Scratch Card purchased successfully!');
-              setQuantity(1);
-              setPhoneNumber('');
-              setEmail('');
-              fetchWalletBalance();
-            } catch (error) {
-              Alert.alert('Failed ❌', error.response?.data?.message || 'Failed to purchase WAEC card.');
-            } finally {
-              setLoading(false);
-            }
-          },
-        },
-      ]
+      async () => {
+        setLoading(true);
+        try {
+          const response = await axios.post(apiUrl(API_CONFIG.ENDPOINTS.WAEC.BUY_PIN), {
+            examType: 'result_checker',
+            quantity,
+            phoneNumber,
+            email,
+            amount: totalAmount,
+            userId,
+          });
+          showAlert('Success ✅', response.data?.message || 'WAEC Scratch Card purchased successfully!');
+          setQuantity(1);
+          setPhoneNumber('');
+          setEmail('');
+          fetchWalletBalance();
+        } catch (error) {
+          showAlert('Failed ❌', error.response?.data?.message || error.message || 'Failed to purchase WAEC card.');
+        } finally {
+          setLoading(false);
+        }
+      }
     );
   };
 
@@ -148,7 +144,7 @@ export default function WaecScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
-  content: { padding: 20, paddingBottom: 40 },
+  content: { padding: 20, paddingBottom: 110 },
   hero: { backgroundColor: '#1E3A5F', borderRadius: 20, padding: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, overflow: 'hidden' },
   heroContent: { flex: 1, marginRight: 12 },
   badge: { backgroundColor: 'rgba(59,130,246,0.3)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, alignSelf: 'flex-start', marginBottom: 8 },

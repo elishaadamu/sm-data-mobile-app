@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import axios from 'axios';
 import Toast from 'react-native-toast-message';
 import { Ionicons } from '@expo/vector-icons';
-import { Picker } from 'react-native';
 import { apiUrl, API_CONFIG } from '../../../config/api';
 import { useAppContext } from '../../../context/AppContext';
 import NetworkSelector from '../../../components/NetworkSelector';
 import Input from '../../../components/Input';
 import Button from '../../../components/Button';
+import { confirmAction, showAlert } from '../../../utils/alert';
 
 export default function DataScreen() {
-  const { userData, walletBalance, fetchWalletBalance, walletLoading } = useAppContext();
+  const { userData, walletBalance, fetchWalletBalance } = useAppContext();
   const [loading, setLoading] = useState(false);
   const [selectedNetwork, setSelectedNetwork] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -59,7 +59,7 @@ export default function DataScreen() {
     return plans.find((p) => p.plan_code === selectedPlanId);
   }, [selectedPlanId, plans]);
 
-  const handlePurchase = async () => {
+  const handlePurchase = () => {
     const userId = userData?.id || userData?._id;
     if (!userId) { Toast.show({ type: 'error', text1: 'User not found' }); return; }
     if (!selectedPlanId || !phoneNumber) { Toast.show({ type: 'error', text1: 'Please fill all fields' }); return; }
@@ -77,38 +77,32 @@ export default function DataScreen() {
       }
     };
 
-    Alert.alert(
+    confirmAction(
       'Confirm Purchase',
       `Buy ${selectedPlan.label} for ₦${selectedPlan.amount.toLocaleString()}?\nPhone: ${phoneNumber}`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Proceed',
-          onPress: async () => {
-            setLoading(true);
-            try {
-              const response = await axios.post(apiUrl(API_CONFIG.ENDPOINTS.DATA.CREATE), {
-                network: getNetworkNumber(selectedNetwork),
-                phone: phoneNumber,
-                PlanId: selectedPlanId,
-                userId,
-                amount: selectedPlan.amount,
-              });
-              const txData = response.data.data;
-              Alert.alert('Success ✅', `${txData.plan_name || 'Data'} purchased for ₦${txData?.amount || selectedPlan.amount}\nPhone: ${txData.mobile_number}\n\n${txData.message || ''}`);
-              setSelectedNetwork('');
-              setPhoneNumber('');
-              setSelectedPlanId('');
-              setPlans([]);
-              fetchWalletBalance();
-            } catch (error) {
-              Alert.alert('Failed ❌', error.response?.data?.message || 'Failed to purchase data.');
-            } finally {
-              setLoading(false);
-            }
-          },
-        },
-      ]
+      async () => {
+        setLoading(true);
+        try {
+          const response = await axios.post(apiUrl(API_CONFIG.ENDPOINTS.DATA.CREATE), {
+            network: getNetworkNumber(selectedNetwork),
+            phone: phoneNumber,
+            PlanId: selectedPlanId,
+            userId,
+            amount: selectedPlan.amount,
+          });
+          const txData = response.data.data || response.data;
+          showAlert('Success ✅', `${txData.plan_name || selectedPlan.label} purchased successfully for ₦${txData?.amount || selectedPlan.amount}\nPhone: ${txData.mobile_number || phoneNumber}`);
+          setSelectedNetwork('');
+          setPhoneNumber('');
+          setSelectedPlanId('');
+          setPlans([]);
+          fetchWalletBalance();
+        } catch (error) {
+          showAlert('Failed ❌', error.response?.data?.message || error.message || 'Failed to purchase data.');
+        } finally {
+          setLoading(false);
+        }
+      }
     );
   };
 
@@ -194,7 +188,7 @@ export default function DataScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
-  content: { padding: 20, paddingBottom: 40 },
+  content: { padding: 20, paddingBottom: 110 },
   walletRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F0FDF4', padding: 14, borderRadius: 12, marginBottom: 24, borderWidth: 1, borderColor: '#BBF7D0' },
   walletLabel: { fontSize: 14, color: '#166534', marginLeft: 8 },
   walletAmount: { fontSize: 18, fontWeight: '800', color: '#166534' },

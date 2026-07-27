@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import axios from 'axios';
+import Toast from 'react-native-toast-message';
 import { Ionicons } from '@expo/vector-icons';
 import { apiUrl, API_CONFIG } from '../../../config/api';
 import { useAppContext } from '../../../context/AppContext';
 import NetworkSelector from '../../../components/NetworkSelector';
 import Input from '../../../components/Input';
 import Button from '../../../components/Button';
+import { confirmAction, showAlert } from '../../../utils/alert';
 
 const networkMap = { MTN: '1', GLO: '2', '9MOBILE': '3', AIRTEL: '4' };
 
@@ -20,43 +22,37 @@ export default function AirtimeScreen() {
   const quickAmounts = [100, 200, 500, 1000, 2000, 5000];
   const parsedAmount = parseFloat(amount) || 0;
 
-  const handlePurchase = async () => {
+  const handlePurchase = () => {
     const userId = userData?.id || userData?._id;
     if (!userId || !network || !phoneNumber || !amount) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Toast.show({ type: 'error', text1: 'Please fill in all fields' });
       return;
     }
 
-    Alert.alert(
+    confirmAction(
       'Confirm Purchase',
       `Buy ₦${parsedAmount.toLocaleString()} airtime?\nPhone: ${phoneNumber}`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Proceed',
-          onPress: async () => {
-            setLoading(true);
-            try {
-              const response = await axios.post(apiUrl(API_CONFIG.ENDPOINTS.AIRTIME.CREATE), {
-                network: networkMap[network] || network,
-                amount: parsedAmount,
-                phone: phoneNumber,
-                userId,
-              });
-              const txData = response.data.data;
-              Alert.alert('Success ✅', `₦${txData.amount} airtime sent to ${txData.mobile_number}\nStatus: ${txData.status}\n\n${txData.message || ''}`);
-              setNetwork('');
-              setPhoneNumber('');
-              setAmount('');
-              fetchWalletBalance();
-            } catch (error) {
-              Alert.alert('Failed ❌', error.response?.data?.message || 'Failed to purchase airtime.');
-            } finally {
-              setLoading(false);
-            }
-          },
-        },
-      ]
+      async () => {
+        setLoading(true);
+        try {
+          const response = await axios.post(apiUrl(API_CONFIG.ENDPOINTS.AIRTIME.CREATE), {
+            network: networkMap[network] || network,
+            amount: parsedAmount,
+            phone: phoneNumber,
+            userId,
+          });
+          const txData = response.data.data || response.data;
+          showAlert('Success ✅', `₦${txData.amount || parsedAmount} airtime sent to ${txData.mobile_number || phoneNumber}`);
+          setNetwork('');
+          setPhoneNumber('');
+          setAmount('');
+          fetchWalletBalance();
+        } catch (error) {
+          showAlert('Failed ❌', error.response?.data?.message || error.message || 'Failed to purchase airtime.');
+        } finally {
+          setLoading(false);
+        }
+      }
     );
   };
 
@@ -136,7 +132,7 @@ export default function AirtimeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
-  content: { padding: 20, paddingBottom: 40 },
+  content: { padding: 20, paddingBottom: 110 },
   walletRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F0FDF4', padding: 14, borderRadius: 12, marginBottom: 24, borderWidth: 1, borderColor: '#BBF7D0' },
   walletLabel: { fontSize: 14, color: '#166534', marginLeft: 8 },
   walletAmount: { fontSize: 18, fontWeight: '800', color: '#166534' },
