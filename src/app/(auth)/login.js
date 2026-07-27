@@ -1,21 +1,21 @@
-import React, { useState } from 'react';
+import axios from 'axios';
+import { router } from 'expo-router';
+import { useState } from 'react';
 import {
-  View,
-  Text,
-  ScrollView,
   Image,
-  TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { router } from 'expo-router';
-import axios from 'axios';
 import Toast from 'react-native-toast-message';
-import { apiUrl, API_CONFIG } from '../../config/api';
-import { useAppContext } from '../../context/AppContext';
-import Input from '../../components/Input';
 import Button from '../../components/Button';
+import Input from '../../components/Input';
+import { API_CONFIG, apiUrl } from '../../config/api';
+import { useAppContext } from '../../context/AppContext';
 
 export default function LoginScreen() {
   const { loginUser } = useAppContext();
@@ -41,7 +41,6 @@ export default function LoginScreen() {
         email: email.trim(),
         password,
       });
-
       if (!response.data) throw new Error('No data received');
 
       await loginUser(response.data);

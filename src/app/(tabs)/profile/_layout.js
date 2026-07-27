@@ -3,15 +3,9 @@ import { Stack, router } from 'expo-router';
 import { TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-const BackButton = ({ fallback = '/(tabs)/profile' }) => (
+const BackButton = () => (
   <TouchableOpacity
-    onPress={() => {
-      if (router.canGoBack()) {
-        router.back();
-      } else {
-        router.replace(fallback);
-      }
-    }}
+    onPress={() => router.replace('/(tabs)/profile')}
     style={{ paddingRight: 12, paddingVertical: 4 }}
     activeOpacity={0.7}
   >

@@ -16,13 +16,14 @@ import Toast from 'react-native-toast-message';
 import { Ionicons } from '@expo/vector-icons';
 import { apiUrl, API_CONFIG } from '../../config/api';
 import { useAppContext } from '../../context/AppContext';
+import { confirmAction } from '../../utils/alert';
 import WalletCard from '../../components/WalletCard';
 import ServiceCard from '../../components/ServiceCard';
 import TransactionItem from '../../components/TransactionItem';
 import EmptyState from '../../components/EmptyState';
 
 export default function HomeScreen() {
-  const { userData, walletBalance, walletLoading, notifications, fetchWalletBalance } = useAppContext();
+  const { userData, walletBalance, walletLoading, notifications, fetchWalletBalance, logout } = useAppContext();
   const [refreshing, setRefreshing] = useState(false);
   const [recentTransactions, setRecentTransactions] = useState([]);
   const [transactionsLoading, setTransactionsLoading] = useState(false);
@@ -31,6 +32,7 @@ export default function HomeScreen() {
   const [bvn, setBvn] = useState('');
   const [createLoading, setCreateLoading] = useState(false);
   const [selectedTx, setSelectedTx] = useState(null);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   const services = [
     { name: 'Data', icon: 'cellular', color: '#2563EB', bgColor: '#EFF6FF', route: '/(tabs)/services/data' },
@@ -132,6 +134,8 @@ export default function HomeScreen() {
     }
   };
 
+  const userInitial = (userData?.firstName?.[0] || userData?.fullName?.[0] || 'U').toUpperCase();
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -141,18 +145,20 @@ export default function HomeScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>
+          <View style={{ flex: 1, marginRight: 12 }}>
+            <Text style={styles.greeting} numberOfLines={1}>
               Welcome, {userData?.fullName || userData?.firstName || 'User'} 👋
             </Text>
             <Text style={styles.headerSubtitle}>Your premium services dashboard</Text>
           </View>
+
+          {/* Profile Circle Dropdown Button */}
           <TouchableOpacity
-            style={styles.notifBtn}
-            onPress={() => {}}
+            style={styles.profileAvatarBtn}
+            onPress={() => setShowProfileMenu(true)}
+            activeOpacity={0.8}
           >
-            <Ionicons name="notifications-outline" size={22} color="#334155" />
-            {notifications.length > 0 && <View style={styles.notifDot} />}
+            <Text style={styles.avatarInitials}>{userInitial}</Text>
           </TouchableOpacity>
         </View>
 
@@ -251,6 +257,65 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
 
+      {/* Profile & Logout Dropdown Menu Modal */}
+      <Modal visible={showProfileMenu} transparent animationType="fade" onRequestClose={() => setShowProfileMenu(false)}>
+        <TouchableOpacity
+          style={styles.dropdownOverlay}
+          activeOpacity={1}
+          onPress={() => setShowProfileMenu(false)}
+        >
+          <View style={styles.dropdownCard}>
+            <View style={styles.dropdownUserHeader}>
+              <View style={styles.dropdownAvatarLarge}>
+                <Text style={styles.avatarInitialsLarge}>{userInitial}</Text>
+              </View>
+              <View style={styles.dropdownUserInfo}>
+                <Text style={styles.dropdownUserName} numberOfLines={1}>
+                  {userData?.fullName || userData?.firstName || 'User Account'}
+                </Text>
+                <Text style={styles.dropdownUserEmail} numberOfLines={1}>
+                  {userData?.email || '—'}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.dropdownDivider} />
+
+            <TouchableOpacity
+              style={styles.dropdownItem}
+              onPress={() => {
+                setShowProfileMenu(false);
+                router.push('/(tabs)/profile');
+              }}
+            >
+              <Ionicons name="person-outline" size={20} color="#2563EB" />
+              <Text style={styles.dropdownItemText}>Profile Settings</Text>
+              <Ionicons name="chevron-forward" size={16} color="#CBD5E1" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.dropdownItem}
+              onPress={() => {
+                setShowProfileMenu(false);
+                confirmAction('Logout', 'Are you sure you want to log out of your account?', () => logout());
+              }}
+            >
+              <Ionicons name="log-out-outline" size={20} color="#DC2626" />
+              <Text style={[styles.dropdownItemText, { color: '#DC2626' }]}>Logout</Text>
+            </TouchableOpacity>
+
+            <View style={styles.dropdownDivider} />
+
+            <TouchableOpacity
+              style={styles.dropdownCancelBtn}
+              onPress={() => setShowProfileMenu(false)}
+            >
+              <Text style={styles.dropdownCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
       {/* Order Detail Modal */}
       <Modal visible={!!selectedTx} transparent animationType="slide" onRequestClose={() => setSelectedTx(null)}>
         <View style={styles.modalOverlay}>
@@ -346,8 +411,27 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   greeting: { fontSize: 22, fontWeight: '800', color: '#0F172A' },
   headerSubtitle: { fontSize: 13, color: '#64748B', marginTop: 2 },
-  notifBtn: { width: 44, height: 44, borderRadius: 14, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#F1F5F9' },
-  notifDot: { position: 'absolute', top: 10, right: 12, width: 8, height: 8, borderRadius: 4, backgroundColor: '#DC2626' },
+  profileAvatarBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#2563EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  avatarInitials: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '800',
+    textAlign: 'center',
+    alignSelf: 'center',
+    lineHeight: 22,
+  },
   notifBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#BBF7D0', borderRadius: 12, padding: 12, marginBottom: 16 },
   notifText: { flex: 1, fontSize: 12, color: '#166534', fontWeight: '500' },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, marginTop: 8 },
@@ -362,6 +446,19 @@ const styles = StyleSheet.create({
   transactionsCard: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#F1F5F9' },
   skeletonList: { gap: 12 },
   skeletonRow: { height: 56, backgroundColor: '#F1F5F9', borderRadius: 10 },
+  dropdownOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.4)', justifyContent: 'flex-start', alignItems: 'flex-end', paddingTop: 80, paddingRight: 20 },
+  dropdownCard: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 20, width: 240, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.15, shadowRadius: 20, elevation: 10, borderWidth: 1, borderColor: '#F1F5F9' },
+  dropdownUserHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
+  dropdownAvatarLarge: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center' },
+  avatarInitialsLarge: { color: '#2563EB', fontSize: 16, fontWeight: '800', textAlign: 'center' },
+  dropdownUserInfo: { flex: 1 },
+  dropdownUserName: { fontSize: 14, fontWeight: '700', color: '#0F172A' },
+  dropdownUserEmail: { fontSize: 11, color: '#64748B' },
+  dropdownDivider: { height: 1, backgroundColor: '#F1F5F9', marginVertical: 10 },
+  dropdownItem: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },
+  dropdownItemText: { flex: 1, fontSize: 14, fontWeight: '600', color: '#334155' },
+  dropdownCancelBtn: { paddingVertical: 8, alignItems: 'center' },
+  dropdownCancelText: { fontSize: 13, color: '#94A3B8', fontWeight: '600' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalContent: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '80%' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },

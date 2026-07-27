@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { router } from 'expo-router';
 import axios from 'axios';
 import Toast from 'react-native-toast-message';
 import { apiUrl, API_CONFIG } from '../../../config/api';
@@ -50,6 +51,7 @@ export default function EditProfileScreen() {
         await saveUser(updatedUser);
         await fetchUserData();
         Toast.show({ type: 'success', text1: 'Profile updated successfully!' });
+        router.replace('/(tabs)/profile');
       }
     } catch (error) {
       Toast.show({
@@ -72,6 +74,7 @@ export default function EditProfileScreen() {
         <Input label="Address" value={profile.address} onChangeText={(v) => updateField('address', v)} placeholder="Your address" icon="location-outline" multiline />
 
         <Button title={loading ? 'Saving...' : 'Save Changes'} onPress={handleSave} loading={loading} style={styles.saveBtn} />
+        <Button title="Cancel" variant="secondary" onPress={() => router.replace('/(tabs)/profile')} style={styles.cancelBtn} />
       </View>
     </ScrollView>
   );
@@ -79,7 +82,8 @@ export default function EditProfileScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
-  content: { padding: 20, paddingBottom: 40 },
+  content: { padding: 20, paddingBottom: 110 },
   card: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 20, borderWidth: 1, borderColor: '#F1F5F9' },
   saveBtn: { marginTop: 8 },
+  cancelBtn: { marginTop: 12 },
 });

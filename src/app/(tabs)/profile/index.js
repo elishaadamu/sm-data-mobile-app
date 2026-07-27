@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, SafeAreaView, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppContext } from '../../../context/AppContext';
+import { confirmAction } from '../../../utils/alert';
 
 export default function ProfileScreen() {
   const { userData, logout, walletBalance } = useAppContext();
@@ -14,10 +15,7 @@ export default function ProfileScreen() {
   ];
 
   const handleLogout = () => {
-    Alert.alert('Logout', 'Are you sure you want to logout?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Logout', style: 'destructive', onPress: logout },
-    ]);
+    confirmAction('Logout', 'Are you sure you want to log out of your account?', logout);
   };
 
   return (
@@ -36,7 +34,7 @@ export default function ProfileScreen() {
           <Text style={styles.userEmail}>{userData?.email || 'No email'}</Text>
           <View style={styles.balancePill}>
             <Ionicons name="wallet" size={14} color="#2563EB" />
-            <Text style={styles.balanceText}>₦{walletBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</Text>
+            <Text style={styles.balanceText}>₦{(walletBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</Text>
           </View>
         </View>
 
@@ -86,7 +84,7 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
-  scrollContent: { padding: 20, paddingBottom: 40 },
+  scrollContent: { padding: 20, paddingBottom: 110 },
   profileHeader: { alignItems: 'center', marginBottom: 28, paddingTop: 20 },
   avatarContainer: { marginBottom: 16 },
   avatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#2563EB', alignItems: 'center', justifyContent: 'center' },
