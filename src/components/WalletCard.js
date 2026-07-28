@@ -1,8 +1,21 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
+import Toast from 'react-native-toast-message';
 
 const WalletCard = ({ balance = 0, loading = false, accountDetails, onCreateAccount }) => {
+  const handleCopyAccount = async () => {
+    if (accountDetails?.accountNumber) {
+      await Clipboard.setStringAsync(accountDetails.accountNumber);
+      Toast.show({
+        type: 'success',
+        text1: 'Account Number Copied!',
+        text2: `${accountDetails.bankName || 'Virtual Account'}: ${accountDetails.accountNumber}`,
+      });
+    }
+  };
+
   return (
     <View style={styles.card}>
       <View style={styles.topRow}>
@@ -28,10 +41,16 @@ const WalletCard = ({ balance = 0, loading = false, accountDetails, onCreateAcco
       <View style={styles.accountSection}>
         <Text style={styles.accountLabel}>Virtual Account</Text>
         {accountDetails?.accountNumber ? (
-          <View>
-            <Text style={styles.accountNumber}>{accountDetails.accountNumber}</Text>
+          <View style={styles.accountInfoContainer}>
+            <TouchableOpacity style={styles.accountNumberRow} onPress={handleCopyAccount} activeOpacity={0.7}>
+              <Text style={styles.accountNumber}>{accountDetails.accountNumber}</Text>
+              <View style={styles.copyBadge}>
+                <Ionicons name="copy-outline" size={14} color="#FFFFFF" />
+                <Text style={styles.copyBadgeText}>Copy</Text>
+              </View>
+            </TouchableOpacity>
             <Text style={styles.bankName}>
-              {accountDetails.bankName} • {accountDetails.accountName}
+              {accountDetails.bankName || 'Wema Bank'} • {accountDetails.accountName || 'SM DATA Wallet'}
             </Text>
             <Text style={styles.feeText}>Fee: 1.5% + ₦50 (capped at ₦5,000)</Text>
           </View>
@@ -63,7 +82,7 @@ const styles = StyleSheet.create({
   },
   topRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justify: 'space-between',
     alignItems: 'center',
   },
   balanceSection: {
@@ -111,6 +130,14 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     marginBottom: 8,
   },
+  accountInfoContainer: {
+    gap: 2,
+  },
+  accountNumberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   accountNumber: {
     fontSize: 20,
     fontWeight: '700',
@@ -118,10 +145,26 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     fontVariant: ['tabular-nums'],
   },
+  copyBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  copyBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
   bankName: {
     fontSize: 12,
     color: 'rgba(255,255,255,0.8)',
-    marginTop: 3,
+    marginTop: 4,
   },
   feeText: {
     fontSize: 10,

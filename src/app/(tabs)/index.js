@@ -9,6 +9,7 @@ import {
   TextInput,
   StyleSheet,
   SafeAreaView,
+  Share,
 } from 'react-native';
 import { router } from 'expo-router';
 import axios from 'axios';
@@ -104,30 +105,70 @@ export default function HomeScreen() {
     return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
   };
 
+  const handleShareReceipt = async (tx) => {
+    if (!tx) return;
+    const isCredit = tx.type === 'credit';
+    const amountStr = `₦${parseFloat(tx.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+    const dateStr = formatDate(tx.createdAt || tx.date);
+    const ref = tx.transactionReference || tx.reference || tx.transactionId || tx._id || 'N/A';
+
+    const receiptMessage = `
+🧾 SM DATA TRANSACTION RECEIPT
+---------------------------------
+Status: ${tx.status || 'Successful'}
+Type: ${tx.TransactionType || 'VTU Order'}
+Amount: ${isCredit ? '+' : '-'}${amountStr}
+Reference: ${ref}
+Phone: ${tx.phoneNumber || tx.phone || 'N/A'}
+Network: ${tx.network || 'N/A'}
+Description: ${tx.description || '—'}
+Date: ${dateStr}
+---------------------------------
+Thank you for using SM DATA!
+  `.trim();
+
+    try {
+      await Share.share({
+        title: 'SM DATA Order Receipt',
+        message: receiptMessage,
+      });
+    } catch (error) {
+      console.error('Error sharing receipt:', error);
+    }
+  };
+
   const handleCreateAccount = async () => {
     if (!bvn.trim() || bvn.length !== 11) {
-      Toast.show({ type: 'error', text1: 'Please enter a valid 11-digit BVN' });
+      Toast.show({ type: 'error', text1: 'Validation Error', text2: 'Please enter a valid 11-digit NIN' });
       return;
     }
 
     const userId = userData?.id || userData?._id;
-    if (!userId) return;
+    if (!userId) {
+      Toast.show({ type: 'error', text1: 'User session not found' });
+      return;
+    }
 
     setCreateLoading(true);
     try {
+      console.log('Creating virtual account for user:', userId);
       const response = await axios.post(
         apiUrl(API_CONFIG.ENDPOINTS.ACCOUNT.CREATE_VIRTUAL + userId),
-        { number: bvn }
+        { number: bvn.trim() }
       );
-      Toast.show({ type: 'success', text1: 'Virtual account created!' });
+      console.log('Virtual Account Created Response:', response.data);
+      Toast.show({ type: 'success', text1: 'Virtual Account Created Successfully!' });
       setShowCreateAccount(false);
       setBvn('');
-      setAccountDetails(response.data?.data || response.data?.account || response.data?.wallet);
+      const details = response.data?.data || response.data?.account || response.data?.wallet || response.data;
+      setAccountDetails(details);
+      await fetchAccountDetails();
     } catch (error) {
+      console.error('Error creating virtual account:', error.response?.data || error.message);
       Toast.show({
         type: 'error',
-        text1: 'Failed to create account',
-        text2: error.response?.data?.message || 'Please try again.',
+        text1: 'Failed to create virtual account',
+        text2: error.response?.data?.message || error.response?.data?.error || 'Please check your NIN and try again.',
       });
     } finally {
       setCreateLoading(false);
@@ -355,9 +396,15 @@ export default function HomeScreen() {
                   ))}
                 </View>
 
-                <TouchableOpacity style={styles.modalDoneBtn} onPress={() => setSelectedTx(null)}>
-                  <Text style={styles.modalDoneBtnText}>Done</Text>
-                </TouchableOpacity>
+                <View style={styles.modalActionButtons}>
+                  <TouchableOpacity style={styles.shareBtn} onPress={() => handleShareReceipt(selectedTx)} activeOpacity={0.8}>
+                    <Ionicons name="share-social-outline" size={18} color="#2563EB" />
+                    <Text style={styles.shareBtnText}>Share Receipt</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.modalDoneBtn} onPress={() => setSelectedTx(null)} activeOpacity={0.8}>
+                    <Text style={styles.modalDoneBtnText}>Done</Text>
+                  </TouchableOpacity>
+                </View>
               </ScrollView>
             )}
           </View>
@@ -370,11 +417,11 @@ export default function HomeScreen() {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Create Virtual Account</Text>
             <Text style={styles.modalDescription}>
-              Enter your BVN to create a virtual account. Deposits carry a charge of 1.5% + ₦50 (capped at ₦5,000).
+              Enter your 11-digit NIN to create a virtual account. Deposits carry a charge of 1.5% + ₦50 (capped at ₦5,000).
             </Text>
             <TextInput
               style={styles.modalInput}
-              placeholder="Enter 11-digit BVN"
+              placeholder="Enter 11-digit NIN"
               value={bvn}
               onChangeText={setBvn}
               keyboardType="numeric"
@@ -407,8 +454,8 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
-  scrollContent: { padding: 20, paddingBottom: 110 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  scrollContent: { padding: 20, paddingTop: 16, paddingBottom: 110 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, marginTop: 8 },
   greeting: { fontSize: 22, fontWeight: '800', color: '#0F172A' },
   headerSubtitle: { fontSize: 13, color: '#64748B', marginTop: 2 },
   profileAvatarBtn: {
@@ -438,7 +485,7 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 18, fontWeight: '700', color: '#0F172A' },
   seeAll: { fontSize: 13, color: '#2563EB', fontWeight: '600' },
   servicesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  serviceItem: { width: '31%' },
+  serviceItem: { width: '48%' },
   quickActions: { gap: 10, marginBottom: 8 },
   quickActionCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', padding: 14, borderRadius: 14, borderWidth: 1, borderColor: '#F1F5F9' },
   quickActionIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
@@ -473,7 +520,10 @@ const styles = StyleSheet.create({
   detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F8FAFC' },
   detailLabel: { fontSize: 13, color: '#94A3B8', fontWeight: '500' },
   detailValue: { fontSize: 13, color: '#0F172A', fontWeight: '600', textAlign: 'right', maxWidth: '60%' },
-  modalDoneBtn: { marginTop: 24, backgroundColor: '#2563EB', paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
+  modalActionButtons: { flexDirection: 'row', gap: 12, marginTop: 24 },
+  shareBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#BFDBFE', paddingVertical: 14, borderRadius: 12 },
+  shareBtnText: { color: '#2563EB', fontWeight: '700', fontSize: 14 },
+  modalDoneBtn: { flex: 1, backgroundColor: '#2563EB', paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
   modalDoneBtnText: { color: '#FFFFFF', fontWeight: '700', fontSize: 15 },
   modalDescription: { fontSize: 13, color: '#64748B', lineHeight: 20, marginBottom: 20 },
   modalInput: { backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 12, padding: 14, fontSize: 16, color: '#0F172A', marginBottom: 20 },
