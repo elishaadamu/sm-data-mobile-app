@@ -8,6 +8,7 @@ import { useAppContext } from '../../context/AppContext';
 import TransactionItem from '../../components/TransactionItem';
 import EmptyState from '../../components/EmptyState';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import WhatsAppSupport from '../../components/WhatsAppSupport';
 
 export default function HistoryScreen() {
   const { userData } = useAppContext();
@@ -285,6 +286,8 @@ Thank you for using SM DATA!
           </View>
         </View>
       </Modal>
+
+      <WhatsAppSupport />
     </SafeAreaView>
   );
 }

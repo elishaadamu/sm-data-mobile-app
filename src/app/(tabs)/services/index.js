@@ -3,6 +3,7 @@ import { View, Text, ScrollView, StyleSheet, SafeAreaView, TouchableOpacity } fr
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import ServiceCard from '../../../components/ServiceCard';
+import WhatsAppSupport from '../../../components/WhatsAppSupport';
 
 const allServices = [
   { name: 'Data', desc: 'MTN, Airtel, Glo, 9mobile SME & Corporate', icon: 'cellular', color: '#2563EB', bgColor: '#EFF6FF', route: '/(tabs)/services/data' },
@@ -84,6 +85,7 @@ export default function ServicesIndex() {
           </Text>
         </View>
       </ScrollView>
+      <WhatsAppSupport />
     </SafeAreaView>
   );
 }

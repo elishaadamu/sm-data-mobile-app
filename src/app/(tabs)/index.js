@@ -22,6 +22,7 @@ import WalletCard from '../../components/WalletCard';
 import ServiceCard from '../../components/ServiceCard';
 import TransactionItem from '../../components/TransactionItem';
 import EmptyState from '../../components/EmptyState';
+import WhatsAppSupport from '../../components/WhatsAppSupport';
 
 export default function HomeScreen() {
   const { userData, walletBalance, walletLoading, notifications, fetchWalletBalance, logout } = useAppContext();
@@ -448,14 +449,16 @@ Thank you for using SM DATA!
           </View>
         </View>
       </Modal>
+
+      <WhatsAppSupport />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
-  scrollContent: { padding: 20, paddingTop: 16, paddingBottom: 110 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, marginTop: 8 },
+  scrollContent: { padding: 20, paddingTop: 24, paddingBottom: 110 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, marginTop: 10 },
   greeting: { fontSize: 22, fontWeight: '800', color: '#0F172A' },
   headerSubtitle: { fontSize: 13, color: '#64748B', marginTop: 2 },
   profileAvatarBtn: {
